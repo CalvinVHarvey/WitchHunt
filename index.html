@@ -1,0 +1,161 @@
+<html>
+    <head>
+        <title>Witch Hunt</title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+        <script type="text/javascript" src="https://static.codehs.com/gulp/80550f5fc4071985bfef352d04f005ca3de931d3/chs-js-lib/chs.js"></script>
+        <script type="text/javascript" src="classes/animation.js"></script>
+        <script type="text/javascript" src="classes/inventory.js"></script>
+        <script type="text/javascript" src="classes/knife.js"></script>
+        <script type="text/javascript" src="classes/abilities.js"></script>
+        <script type="text/javascript" src="classes/sounds.js"></script>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Koulen&family=Macondo&family=Press+Start+2P&family=Rubik+Wet+Paint&display=swap" rel="stylesheet"> 
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rubik+Wet+Paint&display=swap" rel="stylesheet"> 
+        <script src="https://cdn.socket.io/4.4.1/socket.io.min.js" integrity="sha384-fKnu0iswBIqkjxrhQCTZ7qlLHOFEgNkRmK2vaO/LbTZSXdJfAu6ewRBdwHPhBo/H" crossorigin="anonymous"></script>
+        <link rel="shortcut icon" type="image/png" href="favicon2.png"/>
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Creepster&display=swap');
+            h1 {
+                font-family: 'Rubik Wet Paint'; 
+                text-align: center;
+                color:#B42800;
+            }
+            .title {
+                display: flex;
+                justify-content: center;
+                background-color: #50382b;
+            }
+            canvas {
+                    border: 1px solid black;
+                    display: inline-block;
+                    /* vertical-align: top; */
+                }
+            pre {
+                    border: 1px solid black;
+                    display: inline-block;
+                    width: 400px;
+                    height: 500px;
+                    font-family:'Luminari';
+                    font-size: small;
+                    overflow-y: scroll;
+                    white-space: initial;
+                    word-break: break-word;
+                    grid-column: 1;
+                    grid-row: 1;
+                    background-color: #F5F5F5;
+            }
+            textarea {
+                font-family: inherit;
+                font-size: inherit;
+
+                border: none;
+                background-color: transparent;
+                resize: none;
+                outline: none;
+            }
+            .button-container {
+                background-color: rgba(118, 104, 60, 0.364);
+                cursor:pointer;
+            }
+            .SpellSelection{
+                justify-content:space-around;
+                grid-column: 2;
+                font-family:'creepster';
+                background-color: rgba(118, 104, 60, 0.364);
+                grid-row: 1;
+                justify-self: left;
+                color: #550000;
+            }
+            #heading3 {
+                color: #550000;
+                border-bottom: solid;
+                border-bottom-color:#5B362C;
+            }
+            .player-info {
+                font-family: 'franklin gothic heavy';
+                position: relative;
+            }
+            .game-container{
+                /* vertical-align: center; */
+                display: flex;
+                justify-content: center;
+            }
+            .chat{
+                display: grid;
+            }
+            .checkmark{
+                background-color: #5B362C;
+            }
+            .chat-message{
+                grid-column: 1;
+                grid-row: 2;
+            }
+            .message{
+                overflow-x: scroll;
+            }
+            #player-name {
+                width: 10%;
+                text-align: center;
+            }
+            #join-button {
+                justify-content: center;
+                display:flex;
+                position: relative;
+                font-family: 'franklin gothic heavy';
+                width: 10%;
+                background-color: rgb(43, 187, 76);
+                border:#0e4500;
+                border-style: solid;
+                cursor: pointer;
+            }
+            #send-button{
+                background-color: #A0A0A0;
+                border: 3px solid #000;
+                text-decoration:solid;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="title">
+            <img src="WitchHuntLogo.png" width="64" height="64">
+            <h1 id="GameTitle" style="text-align: center;">Witch Hunt</h1>
+        </div>
+        <div class="player-info">
+            <div>
+                <label for="player-name" style="position:relative; left: 2.5%;">Your Name</label><br>
+                <input id="player-name" maxlength="16" type="text"/>
+            </div>
+            <div>
+                <button id="join-button" style="font-family: 'franklin gothic heavy';">JOIN</button>
+            </div>
+        </div>
+        <div class="game-container">
+        
+            <canvas
+            class="myCanvas"
+            id="codehsCanvas"
+            width="500"
+            height="500"
+            class="codehs-editor-canvas"></canvas>
+            <div class="chat">
+                <pre class="codehs-console" id="console" aria-readonly="false"></pre>
+                <div class="chat-message">
+                    <input id="message" type="text" maxlength="255" size="60">
+                    <button id="send-button" size="10">Enter</button>
+                </div>
+                <div class="SpellSelection">
+                    <h3 id="heading3">Spell Selection</h3><br>
+                        <input class="button-container" id="Imitation" type="checkbox">Imitation</input><br>
+                        <input class="button-container" id="Hide" type="checkbox">Hide</input><br>
+                        <input class="button-container" id="Blip" type="checkbox">Blip</input><br>
+                        <input class="button-container" id="Speed" type="checkbox">Speed</input>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script type="text/javascript" src="app.js"></script>
+    </body>
+</html>

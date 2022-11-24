@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
     <head>
         <title>Witch Hunt</title>
@@ -16,12 +17,18 @@
         <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rubik+Wet+Paint&display=swap" rel="stylesheet"> 
         <script src="https://cdn.socket.io/4.4.1/socket.io.min.js" integrity="sha384-fKnu0iswBIqkjxrhQCTZ7qlLHOFEgNkRmK2vaO/LbTZSXdJfAu6ewRBdwHPhBo/H" crossorigin="anonymous"></script>
         <link rel="shortcut icon" type="image/png" href="favicon2.png"/>
-        <style>
+		<style>
+			@import url('https://fonts.googleapis.com/css2?family=Koulen&family=Macondo&family=Press+Start+2P&family=Rubik+Wet+Paint&family=Tiro+Gurmukhi:ital@1&display=swap');
+		</style> 
+		<style>
             @import url('https://fonts.googleapis.com/css2?family=Creepster&display=swap');
-            h1 {
-                font-family: 'Rubik Wet Paint'; 
+            #GameTitle {
+                font-family: 'Tiro Gurmukhi'; 
                 text-align: center;
-                color:#B42800;
+                color:#F5F5DC;
+            }
+            body {
+                background-color:rgba(118, 104, 60, 0.2);
             }
             .title {
                 display: flex;
@@ -45,7 +52,7 @@
                     word-break: break-word;
                     grid-column: 1;
                     grid-row: 1;
-                    background-color: #F5F5F5;
+                    background-color: #D5D5D5;
             }
             textarea {
                 font-family: inherit;
@@ -82,6 +89,7 @@
                 /* vertical-align: center; */
                 display: flex;
                 justify-content: center;
+				padding-bottom: 50px;
             }
             .chat{
                 display: grid;
@@ -111,11 +119,26 @@
                 border-style: solid;
                 cursor: pointer;
             }
+            #join-button:hover{
+                background-color:rgb(50, 226, 91);
+            }
             #send-button{
                 background-color: #A0A0A0;
                 border: 3px solid #000;
                 text-decoration:solid;
+                cursor: pointer;
             }
+            #send-button:hover{
+                background-color:#c9c9c9;
+            }
+			.footer {
+			    justify-items:left;
+				background-color: #50382b;
+				display: flex;
+				justify-content: left;
+				border: 5px solid #006200;
+				border-radius: 10pt;
+			}
         </style>
     </head>
     <body>
@@ -156,6 +179,14 @@
                 </div>
             </div>
         </div>
+		<div class="footer">
+				<br>
+				<br>
+				<img src="textures/UpNorthStudioLogo.png" width="64" height="64">
+				<a href="https://upnorthstudio.net" style="font-size: 28px; justify-self: center; margin-top: 16px; color: #f6f6f6;">Product of UpNorthStudio</a>
+				<b><p id="footer-note" style="text-align: center; font-size: 24px; color: #D22B2B; margin-left: 40%; margin-bottom: 5px; margin-top: 0;"></p></b>
+                <!-- <a href="https://upnorthstudio.net/witchhunt-alpha-one/" style="font-size: 28px; justify-self: center; color: #f6f6f6;">Controls</a> -->
+		</div>
         <script type="text/javascript" src="app.js"></script>
     </body>
 </html>

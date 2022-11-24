@@ -1,24 +1,26 @@
 {
-  "name": "multiplayer",
-  "version": "1.0.0",
-  "description": "",
+  "name": "witchhunt",
+  "version": "0.0.1",
+  "description": "An online multiplayer game, that is a murder mystery style of game where theres a hunter and a witch",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Calvin Harvey",
+  "license": "UNLICENSED",
   "dependencies": {
     "codehs-js": "^1.2.2",
-    "dotenv": "^16.0.0",
-    "express": "^4.17.3",
-    "fs": "^0.0.1-security",
-    "http": "^0.0.1-security",
-    "socket.io": "^4.4.1",
+    "dotenv": "^16.0.1",
+    "express": "^4.18.1",
+    "fs": "0.0.1-security",
+    "http": "0.0.1-security",
+    "https": "^1.0.0",
+    "socket.io": "^4.5.1",
     "uuid": "^8.3.2",
-    "ws": "^8.5.0",
+    "wordpress": "^1.4.1",
+    "ws": "^8.7.0",
     "xss": "^1.0.11"
   }
 }

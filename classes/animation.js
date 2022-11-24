@@ -6,6 +6,7 @@ function Animation(filename, frames, delay, width, height){
     this.frames = frames;
     const frameCount = this.frames;
     this.delay = delay;
+	let intervalDelay = this.delay;
     this.width = width;
     this.height = height;
     let curframe;
@@ -13,6 +14,7 @@ function Animation(filename, frames, delay, width, height){
     this.isOn = false;
     this.defaultTexture;
     let storedWebImage;
+	let bufferImage;
     this.referenceTexture; 
     this.webImg;
     this.interval;
@@ -21,6 +23,7 @@ function Animation(filename, frames, delay, width, height){
     this.load = function(){
         for (let i = 0; i < frames; i++){
             this.frameList.push("textures/" + filename + "/" + "char2_" + i.toString() + ".png");
+			//this.frameList[i].setSize(width, height);
         }
         this.defaultTexture = "textures/" + filename + "/" + "char2_" + "default" + ".png";
     };
@@ -34,6 +37,7 @@ function Animation(filename, frames, delay, width, height){
         this.interval = undefined;
         storedWebImage.setImage(this.defaultTexture);
         storedWebImage.setSize(width1, height1);
+		//storedWebImage.setPosition();
     };
     this.start = function(webImage){
         if (this.interval != undefined) return;
@@ -45,10 +49,21 @@ function Animation(filename, frames, delay, width, height){
             if (curframe == frameCount){
                 curframe = 0;
             }
-            //setTimeout(()=>{storedWebImage.setImage(frameListArray[curframe]);}, 10);
-            //setTimeout(()=>{storedWebImage.setSize(width1, height1);}, 10);
-            storedWebImage.setImage(frameListArray[curframe]);
-            storedWebImage.setSize(width1, height1);
+			//bufferImage = new WebImage('textures/'+filename+'/char2_'+curframe+'.png');
+			//bufferImage.setPosition(storedWebImage.getX(), storedWebImage.getY());
+			//bufferImage.setSize(width, height);
+			storedWebImage.setImage(frameListArray[curframe]);
+			storedWebImage.setSize(width, height);
+			//ctx.restore();
+			//remove(storedWebImage);
+			//storedWebImage = frameListArray[curframe];
+			//storedWebImage.setPosition(x, y);
+			//add(storedWebImage);
+			//add(bufferImage);
+			//let temp = bufferImage;
+			//bufferImage = storedWebImage;
+            //storedWebImage = temp;
+			//remove(bufferImage);
             curframe++;
         };
         this.interval = setInterval(this.animation, this.delay);

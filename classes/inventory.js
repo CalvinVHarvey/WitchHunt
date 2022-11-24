@@ -18,13 +18,18 @@ let regen = false;
 
 let curStamina = 100;
 
+
+//Handling the inventory of players
 function Inventory(){
     this.texture = new WebImage("textures/inventory.png");
     this.witchMode = false;
     this.setMode = Game.INTERMISSION;
     this.texture.setSize(500, 50);
-    this.timebck = new WebImage('textures/timerscreen.png');
+    this.timebck = new WebImage('textures/timerScreen.png');
     this.timebck.setSize(500, 50);
+	this.bufferImage = new WebImage('textures/inventory.png');
+	this.bufferImage.setSize(500, 50);
+	this.bufferImage.setPosition(this.texture.getX(), this.texture.getY());
     add(this.timebck);
     this.timebck.setPosition(playerRef.texture.getX()+playerRef.texture.getWidth()/2-getWidth()/2, playerRef.texture.getY()+playerRef.texture.getHeight()/2-getHeight()/2);
     this.gameStatus = new Text('INTERMISSION', "20pt Rubik Wet Paint");
@@ -105,9 +110,11 @@ function Inventory(){
             remove(this.items[num].icon);
         }
         this.items[num] = null;
-        if (num == this.selectedSlot){ playerRef.hand.setImage("textures/items/"+assignedTexture+"empty"+playerRef.direction+".png"); playerRef.hand.setSize(32*scaling,32*scaling); this.curItem = null;}
+        if (num == this.selectedSlot){ playerRef.hand.setImage("textures/items/"+assignedTexture+"Empty"+playerRef.direction+".png"); playerRef.hand.setSize(32*scaling,32*scaling); this.curItem = null;}
     };
     this.reload = function(){
+		remove(this.bufferImage);
+		add(this.bufferImage);
         remove(this.texture);
         add(this.texture);
         remove(this.timebck);
@@ -146,7 +153,8 @@ function Inventory(){
     this.rePos = function(playerRef){
         this.timebck.setPosition(playerRef.texture.getX()+playerRef.texture.getWidth()/2-getWidth()/2, playerRef.texture.getY()+playerRef.texture.getHeight()/2-getHeight()/2);
         this.texture.setPosition(playerRef.texture.getX()+playerRef.texture.getWidth()/2-getWidth()/2, playerRef.texture.getY()+playerRef.texture.getHeight()/2+getHeight()/2-inventory.texture.getHeight());
-        this.gameStatus.setPosition(playerRef.texture.getX()+playerRef.texture.getWidth()/2-this.gameStatus.getWidth()/2, playerRef.texture.getY()+playerRef.texture.getHeight()-getHeight()/2);
+        this.bufferImage.setPosition(this.texture.getX(), this.texture.getY());
+		this.gameStatus.setPosition(playerRef.texture.getX()+playerRef.texture.getWidth()/2-this.gameStatus.getWidth()/2, playerRef.texture.getY()+playerRef.texture.getHeight()-getHeight()/2);
         for (let i = 0; i < this.items.length; i++){
             let cur = this.items[i];
             if (cur != null && cur.icon != null){
@@ -182,8 +190,13 @@ function Inventory(){
         this.curSpell = this.spells[num-1];
     };
     this.selectSlot = function(num){
-        this.texture.setImage("textures/inventory"+num+".png");
-        this.texture.setSize(500, 50);
+		let tempImg = new WebImage('textures/inventory'+num+'.png');
+		tempImg.setSize(500, 50);
+		tempImg.setPosition(playerRef.texture.getX()+playerRef.texture.getWidth()/2-getWidth()/2, playerRef.texture.getY()+playerRef.texture.getHeight()/2+getHeight()/2-inventory.texture.getHeight());
+		add(tempImg);
+		remove(this.bufferImage);
+		this.bufferImage = this.texture;
+		this.texture = tempImg;
         if (this.curItem != null && this.curItem.inHand != undefined) this.curItem.deactivateHand();
         this.selectedSlot = num-1;
         this.curItem = this.items[num-1];

@@ -54,7 +54,7 @@ function Disguise(){
     this.mouseClick = false;
     this.selectedPlayer = null;
     this.selectedPlayerId = null;
-    this.lasts = 10000;
+    this.lasts = 20000;
     this.onClick = function(){
         let useX = mouseX+playerRef.texture.getX()+playerRef.texture.getWidth()/2-getWidth()/2;
         let useY = mouseY+playerRef.texture.getY()+playerRef.texture.getHeight()/2-(getHeight()+48)/2;
@@ -79,6 +79,9 @@ function Disguise(){
         disID = this.selectedPlayer;
         let tempAssignedText = assignedTexture;
         if (disID == null){ return;}
+        else if(!players[disID]){
+            println("Player does not exist!".fontcolor('#770000'));
+        }
         if(walkAnimLeft.isOn) walkAnimLeft.stop(playerRef.texture);
         if(walkAnimRight.isOn) walkAnimRight.stop(playerRef.texture);
         assignedTexture = players[disID].characterName;

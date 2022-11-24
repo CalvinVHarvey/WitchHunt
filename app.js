@@ -1,5 +1,4 @@
-
-const socket = io('ws://localhost:5000');
+const socket = io.connect('ws://upnorthstudio.net:5000');
 
 let ctx;
 
@@ -87,6 +86,14 @@ $('input.button-container').on('change', function(evt) {
  });
 
 window.onload = function(){
+    console.log(document.cookie);
+	if (navigator.userAgent.match(/firefox|fxios/i)){
+		let h1 = document.getElementById('footer-note');
+		h1.innerHTML = "";
+	}else {
+		let h1 = document.getElementById('footer-note');
+		h1.innerHTML = "WARNING: For Best Experience Use Firefox!";
+	}
     let background = new Rectangle(5000*scaling, 5000*scaling);
     background.setPosition(0-background.getWidth()/2, 0-background.getHeight()/2);
     add(background);
@@ -112,13 +119,27 @@ window.onload = function(){
         joinButton.onclick = function(){
             if (joined) return;
             joined = true;
+            document.getElementById('send-button').onclick = function(){
+                if (messageBox.value == null || messageBox.value.trim().length <= 0) return;
+                let channelToSend = currentChatChannel;
+                if (amDead) channelToSend = 'dead';
+                socket.emit('chatMessage', {
+                    message: messageBox.value,
+                    channel: channelToSend,
+                    sender: playerRef,
+                });
+                messageBox.value = null;
+                messageBox.disabled = true;
+                messageBox.disabled = false;
+                return;
+            };
             shoot = new Audio('audio/shoot.mp3');
             kill = new Audio('audio/kill.mp3');
             bell = new Audio('audio/bell.mp3');
             stun = new Audio('audio/stun.mp3');
             blip = new Audio('audio/blip.mp3');
 
-            ambient1 = new Audio('audio/spiritdance.mp3');
+            ambient1 = new Audio('audio/SpiritDance.mp3');
             ambient2 = new Audio('audio/frael.mp3');
             ambient3 = new Audio('audio/Robes of Red - Shoppe.mp3');
             ambients = [ambient1, ambient2, ambient3];
@@ -132,7 +153,7 @@ window.onload = function(){
             socket.emit('join', {
                 x: x,
                 y: y,
-                direction: 'left',
+                direction: 'Left',
                 moving: false,
                 hand: null,
                 nickname: myName,
@@ -143,7 +164,8 @@ window.onload = function(){
         socket.on('chatMessageRec', (msg)=>{
             if (lastMsg != null && msg.nickname == lastMsg.nickname && msg.message == lastMsg.message) return;
             if (msg.message.length <= 0) return;
-            if (currentChatChannel == msg.channel){
+            if (msg.channel == 'global' || (msg.channel == 'dead' && amDead)){
+                if (msg.channel == 'dead') println("[DEAD] ".fontcolor('#abb8c3'));
                 println("<" + msg.sender.nickname.fontcolor("#ab8c00") + ">: " + "" + msg.message + "" + "<br>");
             }
             lastMsg = msg;
@@ -196,6 +218,7 @@ window.onload = function(){
             objects = [];
             buildings = {};
             colliders = [];
+			items = {};
             if(inventory) inventory.reload();
             spawnPlayer(0, 0, false);
             parseMapData(mapDataObj);
@@ -203,6 +226,7 @@ window.onload = function(){
     });
     socket.on('startGame', (msg)=>{
         println("Game has Started!".fontcolor('#008800') + "<br>");
+		inventory.clear();
         processSpells();
         if (msg.murderer.id == myId){
             println("You are the Witch!".fontcolor('#660066') + "<br>");
@@ -280,8 +304,11 @@ window.onload = function(){
                 players[value].direction = cur.direction;
                 players[value].characterName = cur.texture;
                 if (players[value].hand == null)
-                    players[value].hand = new WebImage("textures/items/"+players[value].characterName+"empty"+cur.direction+".png");
-                else players[value].hand = new WebImage("textures/items/"+cur.hand+"/"+players[value].characterName+cur.hand+cur.direction+".png");
+                    players[value].hand = new WebImage("textures/items/"+players[value].characterName+"Empty"+cur.direction+".png");
+                else { 
+					let itemName = cur.hand.substring(0,1).toUpperCase() + cur.hand.substring(1);
+					players[value].hand = new WebImage("textures/items/"+cur.hand+"/"+players[value].characterName+itemName+cur.direction+".png");
+				}
                 players[value].textObj = new Text(cur.nickname, nameFont+fontSize);
                 players[value].texture = new WebImage("textures/"+cur.characterName+cur.direction+"/char2_default.png");
                 players[value].texture.setSize(playerWidth*scaling, playerHeight*scaling);
@@ -336,6 +363,13 @@ window.onload = function(){
                 }
                 if (!cur.invisible && players[value].invisInit){ 
                     players[value].invisInit = false;
+					players[value].texture.setImage("textures/"+players[value].characterName+cur.direction+"/char2_default.png");
+					if (players[value].hand == null)
+						players[value].hand = new WebImage("textures/items/"+players[value].characterName+"Empty"+cur.direction+".png");
+					else { 
+						let itemName = cur.hand.substring(0,1).toUpperCase() + cur.hand.substring(1);
+						players[value].hand = new WebImage("textures/items/"+cur.hand+"/"+players[value].characterName+itemName+cur.direction+".png");
+					}
                     add(players[value].texture);
                     add(players[value].hand);
                     add(players[value].textObj);
@@ -362,7 +396,8 @@ window.onload = function(){
                         players[value].hand.setImage("textures/items/"+players[value].characterName+"Empty"+cur.direction+".png");
                         players[value].hand.setSize(32*scaling, 32*scaling);
                     }else if (players[value].hand != undefined){
-                        players[value].hand.setImage("textures/items/"+cur.hand+"/"+players[value].characterName+cur.hand+cur.direction+".png");
+						let itemName = cur.hand.substring(0, 1).toUpperCase() + cur.hand.substring(1);
+                        players[value].hand.setImage("textures/items/"+cur.hand+"/"+players[value].characterName+itemName+cur.direction+".png");
                         players[value].hand.setSize(32*scaling, 32*scaling);
                     }
                 }, 100);
@@ -371,17 +406,17 @@ window.onload = function(){
                 inventory.reload();
                 if (players[value].moving){
                     if (players[value].walkAnimLeft.isOn || players[value].walkAnimRight.isOn){
-                        if (players[value].direction == 'left' && players[value].walkAnimRight.isOn){
+                        if (players[value].direction.toLowerCase() == 'left' && players[value].walkAnimRight.isOn){
                             players[value].walkAnimLeft.start(players[value].texture);
                             players[value].walkAnimRight.stop(players[value].texture);
-                        }else if (players[value].direction == 'right' && players[value].walkAnimLeft.isOn) {
+                        }else if (players[value].direction.toLowerCase() == 'right' && players[value].walkAnimLeft.isOn) {
                             players[value].walkAnimRight.start(players[value].texture);
                             players[value].walkAnimLeft.stop(players[value].texture);
                         }
                     }
-                    if (players[value].direction == 'left') {
+                    if (players[value].direction.toLowerCase() == 'left') {
                         players[value].walkAnimLeft.start(players[value].texture);
-                    }else if (players[value].direction == 'right'){
+                    }else if (players[value].direction.toLowerCase() == 'right'){
                         players[value].walkAnimRight.start(players[value].texture);
                     }
                 }else if(players[value].walkAnimLeft.isOn || players[value].walkAnimRight.isOn){
@@ -410,7 +445,7 @@ window.onload = function(){
                 if(cur.detective) continue;
                 let tempDead = new WebImage('textures/dead.png');
                 tempDead.setSize(32*scaling, 32*scaling);
-                tempDead.setPosition(players[value].texture.getX(), players[value].texture.getY());
+                tempDead.setPosition(temp.texture.getX(), temp.texture.getY());
                 add(tempDead);
                 objects.push({ref:tempDead,dead:true,});
                 for (let i = 0; i < objects.length; i++){
@@ -422,11 +457,12 @@ window.onload = function(){
         for (const key in msg.items){
             let cur = msg.items[key];
             if (!items[key] && !msg.items[key].picked){
+				if (cur.picked) continue;
                 items[key] = cur;
-                items[key].text = new WebImage("textures/"+cur.name+"drop/char2_default.png");
+                items[key].text = new WebImage("textures/"+cur.name+"Drop/char2_default.png");
                 items[key].text.setPosition(cur.x-1000*scaling, cur.y-1000*scaling);
                 items[key].text.setSize(16*scaling, 16*scaling);
-                items[key].anim = new Animation(cur.name+"drop", 5, 200, 16*scaling, 16*scaling);
+                items[key].anim = new Animation(cur.name+"Drop", 5, 200, 16*scaling, 16*scaling);
                 items[key].anim.load();
                 if(checkCords(items[key].text) && items[key].name != 'gun'){
                     socket.emit('itemInterfere', cur);
@@ -570,6 +606,10 @@ function parseMapData(mapObj){
                 }
             }
         }
+		if (amDead){
+			remove(playerRef.texture);
+			add(playerRef.texture);
+		}
         if(!gameOn && playerRef.texture == undefined) return;
         if(!amDead){
             remove(playerRef.hand);
@@ -608,7 +648,7 @@ function spawnPlayer(x, y, firstSpawn){
         y: y,
         hand: new WebImage("textures/items/"+assignedTexture+"EmptyLeft.png"),
         nickname: myName,
-        direction: 'left',
+        direction: 'Left',
         moving: false,
         texture: new WebImage("textures/"+assignedTexture+"Left"+"/char2_default.png"),
         murderer: false,
@@ -776,7 +816,7 @@ function checkDead(obj){
     }
 }
 
-function layerPlayer(player){
+function layerPlayer(player){ //Layering player relative to other objects based on positioning
     let layered = false;
     if (amDead) return;
     for (const key in buildings){
@@ -1033,16 +1073,17 @@ function layerPlayer(player){
 let messageOnHold = false;
 let messageContents;
 
-function reloadHand(){
+function reloadHand(){ //Reloading hand for items 
     if (inventory.curItem == null) {
-        playerRef.hand.setImage("textures/items/"+assignedTexture+"empty"+playerRef.direction+".png");
+        playerRef.hand.setImage("textures/items/"+assignedTexture+"Empty"+playerRef.direction+".png");
     }else {
-        playerRef.hand.setImage("textures/items/"+inventory.curItem.name+"/"+assignedTexture+inventory.curItem.name+playerRef.direction+".png");
+		let itemName = inventory.curItem.name.substring(0, 1).toUpperCase() + inventory.curItem.name.substring(1);
+        playerRef.hand.setImage("textures/items/"+inventory.curItem.name+"/"+assignedTexture+itemName+playerRef.direction+".png");
     }
     playerRef.hand.setSize(32*scaling, 32*scaling);
 }
 
-addEventListener('keydown', (e)=>{
+addEventListener('keydown', (e)=>{ //Handling keyboard events
     if(!gameOn) return;
     if (document.activeElement == messageBox) return;
     keysPressed[e.key.toLowerCase()] = true;
@@ -1055,6 +1096,10 @@ addEventListener('keydown', (e)=>{
         if (inventory.curSpell != null && playerRef.murderer){
             inventory.curSpell.activate();
         }
+    }
+    if (e.key.toLowerCase() == 'g'){
+        if (inventory.curItem.name != 'gun' || inventory.curItem.name != 'knife') return; 
+        inventory.removeItem(inventory.selectedSlot);
     }
     if(e.key == 'ArrowUp' && playerRef.murderer){
         inventory.selectSpell(1);
@@ -1086,13 +1131,13 @@ addEventListener('keydown', (e)=>{
     }
     if(amDead) return;
     if (e.key.toLowerCase() == 'a') {
-        playerRef.direction = 'left';
+        playerRef.direction = 'Left';
         if (walkAnimRight.isOn){
             walkAnimRight.stop();
         }
     }
     else if (e.key.toLowerCase() == 'd'){
-        playerRef.direction = 'right';
+        playerRef.direction = 'Right';
         if (walkAnimLeft.isOn){
             walkAnimLeft.stop();
         }
@@ -1101,31 +1146,22 @@ addEventListener('keydown', (e)=>{
         playerRef.moving = true;
     }
     if (!keysPressed.w && !keysPressed.s && !keysPressed.a && !keysPressed.d) return;
-    if(playerRef.direction == 'left') walkAnimLeft.start(playerRef.texture);
-    else if(playerRef.direction == 'right') walkAnimRight.start(playerRef.texture);
+    if(playerRef.direction.toLowerCase() == 'left') walkAnimLeft.start(playerRef.texture);
+    else if(playerRef.direction.toLowerCase() == 'right') walkAnimRight.start(playerRef.texture);
     setTimeout(()=>{    
-        if (inventory.curItem == null) {
-            playerRef.hand.setImage("textures/items/"+assignedTexture+"empty"+playerRef.direction+".png");
-        }else {
-            playerRef.hand.setImage("textures/items/"+inventory.curItem.name+"/"+assignedTexture+inventory.curItem.name+playerRef.direction+".png");
-        }
-        playerRef.hand.setSize(32*scaling, 32*scaling);
+        reloadHand();
     }, 100);
 });
 addEventListener('keyup', (e)=>{
     if(!gameOn) return;
     keysPressed[e.key.toLowerCase()] = false;
     if (e.key == 'Enter'){
-        if (messageOnHold){
-            messageContents = messageBox.value.trim();
-            messageBox.value = null;
-            messageOnHold = false;
-            return;
-        }
         if (messageBox.value == null || messageBox.value.trim().length <= 0) return;
+        let channelToSend = currentChatChannel;
+        if (amDead) channelToSend = 'dead';
         socket.emit('chatMessage', {
             message: messageBox.value,
-            channel: currentChatChannel,
+            channel: channelToSend,
             sender: playerRef,
         });
         messageBox.value = null;
@@ -1138,10 +1174,10 @@ addEventListener('keyup', (e)=>{
         return;
     }
     playerRef.moving = false;
-    if(playerRef.direction == 'left') setTimeout(()=>{
+    if(playerRef.direction.toLowerCase() == 'left') setTimeout(()=>{
         walkAnimLeft.stop(playerRef.texture);
     }, 100);
-    else if(playerRef.direction == 'right') setTimeout(()=>{
+    else if(playerRef.direction.toLowerCase() == 'right') setTimeout(()=>{
         walkAnimRight.stop(playerRef.texture);
     }, 100);
 });

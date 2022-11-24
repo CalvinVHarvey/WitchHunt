@@ -1,18 +1,21 @@
+//Constants
 const express = require("express");
 const app = express();
 const fs = require('fs');
 const xss = require('xss');
 const process = require("dotenv");
 const httpModule = require('http');
+
 const http = httpModule.createServer(app);
 const path = require('path');
-const io = require("socket.io")(http, {cors: {origin: "*"}});
+const io = require("socket.io")(http, {cors: {origin: "*:*"}});
 const uuid = require('uuid');
 const SCALING =2;
 const COUNT = 20;
 
 const ITEM_DESPAWN = 60000;
 
+//Filter for chat so html elements cant be used
 var filter = {
     whiteList: {}, // empty, means filter out all tags
     stripIgnoreTag: true, // filter out all HTML not in the whitelist
@@ -20,11 +23,16 @@ var filter = {
     // to filter out its content
 };
 
+//Webserver Information
 const PORT = 5000;
-const HOST = "http://localhost";
-const GAMETICKS = 50;
-const ROUND_LENGTH = 20;
+const HOST = "http://upnorthstudio.net";
 
+//Gameserver Information
+const GAMETICKS = 50;
+let ROUND_LENGTH = 360;
+
+
+//Logic
 let players = {};
 let projectiles = {};
 let items = {};
@@ -33,6 +41,8 @@ let onlinePlayers = 0;
 let objects = {};
 let gameTick = false;
 let selectedMap = 'salem';
+
+let lobby = '/';
 
 let minPlayers = 2;
 
@@ -58,7 +68,10 @@ let timer;
 
 let temp = "{cors: {origin: "*"}}";
 
-app.get('/', (req, resp)=>{
+
+//Webserver Logic
+app.get(lobby, (req, resp)=>{
+	console.log(__dirname);
     resp.sendFile(__dirname + "/index.html");
     app.use(express.static(__dirname + '/'));
 });
@@ -78,21 +91,20 @@ function getRandom(){
     return Math.random().toString().substring(2, 20);
 }
 
-io.on('connection', socket =>{
+//Handling connections of clients
+io.of(lobby).on('connection', (socket) =>{
     console.log("Connected!");
     if (players[socket.id] != undefined){
         
     }
+	socket.emit('init', {});
     socket.on('init', (message)=>{
         console.log("Recieved initialization");
     });
-    socket.on('doneLoading', (msg)=>{
-        
+    socket.on('sound', (msg)=>{   //When something happens that other players need to hear audio for
+        io.of(lobby).emit('playSound', {x: msg.x, y: msg.y, sound: msg.audio,});
     });
-    socket.on('sound', (msg)=>{
-        io.emit('playSound', {x: msg.x, y: msg.y, sound: msg.audio,});
-    });
-    socket.on('join', (msg)=>{
+    socket.on('join', (msg)=>{   //Activated when the join button is pressed
         if(players[socket.id]) return;
         console.log(msg.nickname + " has joined the game!");
         let temp = {
@@ -113,7 +125,7 @@ io.on('connection', socket =>{
             players[socket.id] = temp;
         }else if(curGame == Game.INGAME){
             spectators[socket.id] = temp;
-            io.to(socket.id).emit('killed', {});
+            io.of(lobby).to(socket.id).emit('killed', {});
         }
         onlinePlayers++;
         if (onlinePlayers >= minPlayers && (timer == undefined || timer == null)){
@@ -126,7 +138,7 @@ io.on('connection', socket =>{
         }
         let playerJoined = players[socket.id];
         if (playerJoined == undefined && !spectators[socket.id]) playerJoined = spectators[socket.id]; 
-        io.emit('joinMsg', {
+        io.of(lobby).emit('joinMsg', {
             player: playerJoined,
         });
         let mapDataFile = "";
@@ -137,15 +149,15 @@ io.on('connection', socket =>{
             console.log("error reading map file");
         }
         mapObj = JSON.parse(mapDataFile);
-        io.to(socket.id).emit('loadMap', JSON.parse(mapDataFile));
+        io.of(lobby).to(socket.id).emit('loadMap', JSON.parse(mapDataFile));
     });
-    socket.on('chatMessage', (msg)=>{
+    socket.on('chatMessage', (msg)=>{  //Receiving chat messages from players
         let cleanedMessage = xss(msg.message, filter);
         let tempMsg = msg;
         tempMsg.message = cleanedMessage;
-        io.emit('chatMessageRec', tempMsg);
+        io.of(lobby).emit('chatMessageRec', tempMsg);
     });
-    socket.on('pos', (msg)=>{
+    socket.on('pos', (msg)=>{   //Handling updating player movement information
         if(players[msg.id] == undefined && spectators[msg.id] == undefined) return; 
         if(!msg.isDead && players[msg.id] != undefined){
             players[msg.id].x = msg.x;
@@ -162,13 +174,13 @@ io.on('connection', socket =>{
             io.to(msg.id).emit('killed',{});
         }
     });
-    socket.on('removeProj', (msg)=>{
+    socket.on('removeProj', (msg)=>{  //Deleting bullet projectiles
         if(!projectiles[msg.id]) return;
         projectiles[msg.id].delete = true;
         setTimeout(()=>{delete projectiles[msg.id];}, 100);
     });
-    io.to(socket.id).emit('init', {data: "hello world"});
-    socket.on('shoot', (msg)=>{
+    io.of(lobby).to(socket.id).emit('init', {data: "hello world"});
+    socket.on('shoot', (msg)=>{  //Adding bullet projectiles when gun is shot
         let projectilesId = getRandom();
         let temp = {
             id: projectilesId,
@@ -180,7 +192,7 @@ io.on('connection', socket =>{
         };
         projectiles[projectilesId] = temp;
     });
-    socket.on('disguise', (msg)=>{
+    socket.on('disguise', (msg)=>{  //Handling Imitate witch ability
         if (msg.value){ 
             players[msg.id].disguised = msg.disguiseID;
             players[msg.id].characterName = players[msg.disguiseID].characterName;
@@ -190,10 +202,10 @@ io.on('connection', socket =>{
             players[msg.id].characterName = players[msg.id].texture;
         }
     });
-    socket.on('invisible', (msg)=>{
+    socket.on('invisible', (msg)=>{  //Handling witch hide ability
         players[msg.id].invisible = msg.value;
     });
-    socket.on('playerKilled', (msg)=>{
+    socket.on('playerKilled', (msg)=>{  //Handling player deaths 
         if (lastKill == msg.playerKilled) return;
         let playerKilled = players[msg.playerKilled];
         spectators[msg.playerKilled] = playerKilled;
@@ -201,7 +213,7 @@ io.on('connection', socket =>{
         alive--;
         socket.to(msg.playerKilled).emit('killed', {});
         if (msg.projId != undefined){
-            if (msg.playerKilled != murderer.id) io.emit('killed', {customMessage:"You killed an innocent person! <br> you're not the murderer, your a symbol of justice you fiend!"});
+            if (msg.playerKilled != murderer.id) io.of(lobby).emit('killed', {customMessage:"You killed an innocent person! <br> you're not the murderer, your a symbol of justice you fiend!"});
             projectiles[msg.projId].delete = true;
             alive--;
             setTimeout(()=>{delete projectiles[msg.projId];}, 100);
@@ -209,16 +221,15 @@ io.on('connection', socket =>{
         if (msg.playerKilled == detective.id){
             let id = uuid.v4();
             players[msg.playerKilled].detective = true;
-            //console.log(players[msg.playerKilled].x, players[msg.playerKilled].y);
             items[id] = {x: players[msg.playerKilled].x+mapObj.width/2*SCALING, y: players[msg.playerKilled].y+mapObj.height/2*SCALING, name: 'gun', id: id, created: Date.now(), neverDespawn:false,};
         }
         if (msg.playerKilled == murderer.id){
             countDown = 2;
-            io.emit('townWin', {});
+            io.of(lobby).emit('townWin', {});
         }else if (alive < 2){
             countDown = 2;
-            if(players[murderer.id]) io.emit('witchWin', {});
-            else io.emit('townWin', {});
+            if(players[murderer.id]) io.of(lobby).emit('witchWin', {});
+            else io.of(lobby).emit('townWin', {});
         }
         socket.to(msg.playerKilled).emit('killed', {});
         setTimeout(()=>{delete players[msg.playerKilled];}, 100);
@@ -230,23 +241,29 @@ io.on('connection', socket =>{
         players[msg.id].chosen = true;
     });
 
-    socket.on('stun', (msg)=>{
+    socket.on('stun', (msg)=>{ //Handling the stunning of players
         players[msg.player].stunned = true;
         io.to(msg.player).emit('stunned', {amount: msg.amount});
-        io.emit('stunSound', {x: msg.x, y: msg.y});
+        io.of(lobby).emit('stunSound', {x: msg.x, y: msg.y});
         setTimeout(()=>{players[msg.player].stunned = false;}, msg.amount);
     });
 
-    socket.on('itemInterfere', (msg)=>{
+    socket.on('itemInterfere', (msg)=>{  //handling item pick up logic from player and witch
         if (!items[msg.id]) return;
         items[msg.id].picked = true;
+        if (items[msg.id].name == 'gun' && socket.id != murderer.id) {
+            detective = players[socket.id];
+        }
         setTimeout(()=>{delete items[msg.id];}, 100);
     });
 
     socket.on('itemPickup', (msg)=>{
         if(!items[msg.id]) return;
         items[msg.id].picked = true;
-        io.emit('itemPicked', {id:msg.id});
+        if (items[msg.id].name == 'gun' && socket.id != murderer.id){
+            detective = players[socket.id];
+        }
+        io.of(lobby).emit('itemPicked', {id:msg.id});
         delete items[msg.id];
     });
     socket.on('disconnect', (msg)=>{
@@ -263,7 +280,11 @@ io.on('connection', socket =>{
             spectators[socket.id].left = true;
             playerLeft = spectators[socket.id];
         }
-        io.emit('leaveMsg', {player: playerLeft});
+        if (murderer != undefined && socket.id == murderer.id) {
+            curGame = Game.INTERMISSION;
+            countDown = COUNT;
+        }
+        io.of(lobby).emit('leaveMsg', {player: playerLeft});
         setTimeout(()=>{
             if (players[socket.id] != undefined)
                 delete players[socket.id];
@@ -276,6 +297,8 @@ io.on('connection', socket =>{
             if (curGame == Game.INTERMISSION){
                 countDown = COUNT;
             }else {
+                gameEnd();
+                io.of(lobby).emit('gameEnd', {});
                 curGame = Game.INTERMISSION;
                 countDown = COUNT;
             }
@@ -304,14 +327,14 @@ function timeCount(){
         }
         gameStart();
         alive = onlinePlayers;
-        io.emit('startGame', {murderer:murderer, detective:detective});
+        io.of(lobby).emit('startGame', {murderer:murderer, detective:detective});
         countDown = ROUND_LENGTH;
     }else if(curGame == Game.INGAME){
         curGame = Game.INTERMISSION;
         gameEnd();
         countDown = COUNT+6;
-        io.emit('endScreen', {});
-        setTimeout(()=>{io.emit('gameEnd', {});}, 5000);
+        io.of(lobby).emit('endScreen', {});
+        setTimeout(()=>{io.of(lobby).emit('gameEnd', {});}, 5000);
     }
 }
 
@@ -320,6 +343,7 @@ function gameStart(){
         if (players[key].chosen == false)
             io.to(key).emit('killed', {});
     }
+    ROUND_LENGTH = 360+onlinePlayers*10;
 }
 
 function gameEnd(){
@@ -335,7 +359,7 @@ function gameEnd(){
     for (const key in spectators){
         spectators[key].isDead = false;
         players[key] = spectators[key];
-        players[key].direction = 'left';
+        players[key].direction = 'Left';
     }
     spectators = undefined;
     spectators = {};
@@ -375,14 +399,14 @@ function countItems(){
 }
 
 function startGameTick(){
-    io.emit('gamestate', {
+    io.of(lobby).emit('gamestate', {
         players: players,
         spectators: spectators,
         items:items,
         curMode : curGame,
         time: countDown,
     });
-    io.emit('bullets', {bullet: projectiles});
+    io.of(lobby).emit('bullets', {bullet: projectiles});
     for (const key in projectiles){
         if (projectiles[key].amount == undefined){
             projectiles[key].amount = 1;

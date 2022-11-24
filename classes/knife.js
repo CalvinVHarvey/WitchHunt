@@ -85,6 +85,7 @@ function Gun(scaling){
         return Math.sqrt(dist); 
     };
     this.activate = function(){
+		if(this.onHold) return;
         this.onHold = true;
         let mx, my;
         let cx = playerRef.texture.getX()+playerRef.texture.getWidth()/2;
@@ -172,7 +173,7 @@ function Stick(scaling){
             if (min == null) min = key;
             let cur = players[key].texture;
             let minPlayer = players[min].texture;
-            if (this.getDistance(ref.getX(), ref.getY(), cur.getX(), cur.getY() < this.getDistance(ref.getX(), ref.getY(), minPlayer.getX(), minPlayer.getY()))){
+            if (this.getDistance(ref.getX(), ref.getY(), cur.getX(), cur.getY()) < this.getDistance(ref.getX(), ref.getY(), minPlayer.getX(), minPlayer.getY())){
                 min = key;
             }
         }
